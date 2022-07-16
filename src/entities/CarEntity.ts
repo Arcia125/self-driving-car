@@ -4,7 +4,7 @@ import { Entity } from './Entity';
 export class CarEntity extends Entity {
   private speed: number = 0;
   private acceleration: number = 0.2;
-  private maxSpeed: number = 3;
+  private maxSpeed: number = 5;
   private friction: number = 0.05;
   private turnRate: number = 0.03;
 
