@@ -3,8 +3,8 @@ import { Entity } from './Entity';
 
 export class CarEntity extends Entity {
   private speed: number = 0;
-  private acceleration: number = 0.25;
-  private maxSpeed: number = 5;
+  private acceleration: number = 0.35;
+  private maxSpeed: number = 10;
   private friction: number = 0.05;
   private turnRate: number = 0.03;
 
