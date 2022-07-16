@@ -5,7 +5,5 @@ export class Entity {
     public width: number,
     public height: number,
     public angle: number = 0,
-  ) {
-
-  }
+  ) {}
 }
