@@ -1,0 +1,24 @@
+{
+  "name": "self-driving-car",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Self driving car using neural networks.",
+  "type": "module",
+  "keywords": [
+    "self",
+    "driving",
+    "car",
+    "simulation"
+  ],
+  "author": "Kevin Hallett",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.4",
+    "vite": "^3.0.0"
+  }
+}
