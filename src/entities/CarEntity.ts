@@ -12,25 +12,21 @@ export class CarEntity extends Entity {
     // Go forward
     if (controls.forward) {
       this.speed += this.acceleration;
-      console.table({ ...this, ...controls });
     }
 
     // Go Backwards
     if (controls.reverse) {
       this.speed -= this.acceleration;
-      console.table({ ...this, ...controls });
     }
 
     // Speed limit
     if (this.speed > this.maxSpeed) {
       this.speed = this.maxSpeed;
-      console.table({ ...this, ...controls });
     }
 
     // Reverse speed limit
     if (this.speed < -this.maxSpeed / 2) {
       this.speed = -this.maxSpeed / 2;
-      console.table({ ...this, ...controls });
     }
 
 
