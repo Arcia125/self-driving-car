@@ -1,3 +1,4 @@
+import { CarControls } from '../controls';
 import { Entity } from './Entity';
 
 export class CarEntity extends Entity {
@@ -6,8 +7,8 @@ export class CarEntity extends Entity {
   private maxSpeed: number = 3;
   private friction: number = 0.05;
   private turnRate: number = 0.03;
-  update = (controls: { left: boolean, right: boolean, forward: boolean, reverse: boolean }) => {
 
+  #move = (controls: CarControls) => {
     // Go forward
     if (controls.forward) {
       this.speed += this.acceleration;
@@ -28,7 +29,7 @@ export class CarEntity extends Entity {
 
     // Reverse speed limit
     if (this.speed < -this.maxSpeed / 2) {
-      this.speed = -this.maxSpeed/2;
+      this.speed = -this.maxSpeed / 2;
       console.table({ ...this, ...controls });
     }
 
@@ -57,9 +58,11 @@ export class CarEntity extends Entity {
       }
     }
 
-    this.x -= Math.sin(this.angle)*this.speed;
-    this.y -= Math.cos(this.angle)*this.speed;
+    this.x -= Math.sin(this.angle) * this.speed;
+    this.y -= Math.cos(this.angle) * this.speed;
+  }
 
-
+  update = (controls: CarControls) => {
+    this.#move(controls)
   };
 }
