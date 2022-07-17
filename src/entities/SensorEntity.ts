@@ -12,8 +12,8 @@ export class SensorEntity extends Entity {
     public carEntity: CarEntity,
     public roadEntity: RoadEntity,
     public rayCount: number = 5,
-    public rayLength: number = 200,
-    public raySpread: number = Math.PI / 2,
+    public rayLength: number = 400,
+    public raySpread: number = Math.PI / 1.61841566,
     public rays: Ray[] = []
   ) {
     super(0, 0, 0, 0, 0, carEntity);

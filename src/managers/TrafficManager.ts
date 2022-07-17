@@ -9,12 +9,12 @@ export class TrafficManager {
         this.roadEntity,
         {
           acceleration: 0.35,
-          maxSpeed: 7,
+          maxSpeed: Math.random() * 5 + 10,
           friction: 0.05,
           turnRate: 0.03,
         },
-        roadEntity.getLaneCenter(1),
-        -100,
+        roadEntity.getLaneCenter(Math.floor(Math.random() * roadEntity.laneCount)),
+        Math.random() * -20000,
         30,
         50
       ],
