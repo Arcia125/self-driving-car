@@ -9,16 +9,12 @@ export class CarRenderer {
   public render = () => {
     const { ctx, carEntity } = this;
     ctx.beginPath();
-    ctx.save();
-    ctx.translate(carEntity.x, carEntity.y);
-    ctx.rotate(-carEntity.angle)
-    ctx.rect(
-      -carEntity.width / 2,
-      -carEntity.height / 2,
-      carEntity.width,
-      carEntity.height
-    );
+    ctx.fillStyle = carEntity.damaged ? '#B00B00' : '#222'
+    const polygon = carEntity.polygon;
+    ctx.moveTo(polygon[0].x, polygon[0].y);
+    for (let i = 1; i < polygon.length; i++) {
+      ctx.lineTo(polygon[i].x, polygon[i].y);
+    }
     ctx.fill();
-    ctx.restore();
   }
 }

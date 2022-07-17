@@ -21,10 +21,10 @@ export class Environment {
     this.roadEntity = new RoadEntity(3, this.carCanvas.width/2, 0, this.carCanvas.width * 0.9, this.carCanvas.height);
     this.roadRenderer = new RoadRenderer(this.ctx, this.roadEntity);
 
-    this.carEntity = new CarEntity(this.roadEntity.getLaneCenter(Math.floor(this.roadEntity.laneCount / 2)), 100, 30, 50);
+    this.carEntity = new CarEntity(this.roadEntity, this.roadEntity.getLaneCenter(Math.floor(this.roadEntity.laneCount / 2)), 100, 30, 50);
     this.carRenderer = new CarRenderer(this.ctx, this.carEntity);
 
-    this.sensorEntity = new SensorEntity(this.carEntity);
+    this.sensorEntity = new SensorEntity(this.carEntity, this.roadEntity);
     this.sensorRenderer = new SensorRenderer(this.ctx, this.sensorEntity)
   }
 

@@ -1,26 +1,30 @@
-import { CarControls } from '../controls';
 import { Entity } from './Entity';
 import { CarEntity } from './CarEntity';
-import { lerp } from '../utils';
+import { RoadEntity } from './RoadEntity';
+import { CarControls } from '../controls';
+import { getIntersection, lerp } from '../utils';
+import { Ray, Touch } from '../interfaces';
 
 export class SensorEntity extends Entity {
+  public readings: (Touch | null | undefined)[] = [];
   constructor(
     public carEntity: CarEntity,
-    public rayCount: number = 3,
-    public rayLength: number = 100,
-    public raySpread: number = Math.PI / 4,
-    public rays: { x: number, y: number }[][] = []
+    public roadEntity: RoadEntity,
+    public rayCount: number = 5,
+    public rayLength: number = 200,
+    public raySpread: number = Math.PI / 2,
+    public rays: Ray[] = []
   ) {
     super(0, 0, 0, 0, 0, carEntity);
   }
 
-  update = (controls: CarControls) => {
+  #castRays = () => {
     this.rays = [];
     for (let i = 0; i < this.rayCount; i++) {
       const rayAngle = lerp(
         this.raySpread / 2,
         -this.raySpread / 2,
-        i / (this.rayCount - 1)
+        this.rayCount === 1 ? 0.5 : i / (this.rayCount - 1)
       ) + this.carEntity.angle;
 
       const start = {
@@ -33,6 +37,41 @@ export class SensorEntity extends Entity {
       }
 
       this.rays.push([start, end])
+    }
+  }
+
+  #getReading = (ray: Ray) => {
+    const { roadEntity } = this;
+    let touches: Touch[] = [];
+    for (let i = 0; i < roadEntity.borders.length; i++) {
+      const touch = getIntersection(
+        ray[0],
+        ray[1],
+        roadEntity.borders[i][0],
+        roadEntity.borders[i][1]
+      );
+
+      if (touch) {
+        touches.push(touch);
+      }
+    }
+
+    if (touches.length == 0) {
+      return null
+    } else {
+      const offsets = touches.map(e => e.offset);
+      const minOffset = Math.min(...offsets);
+      return touches.find(e => e.offset == minOffset)
+    }
+  }
+
+  update = (controls: CarControls) => {
+    this.#castRays();
+    this.readings = [];
+    for (let i = 0; i < this.rays.length; i++) {
+      this.readings.push(
+        this.#getReading(this.rays[i])
+      )
     }
   };
 

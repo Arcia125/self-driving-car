@@ -1,5 +1,10 @@
 import { CarControls } from '../controls';
+import { Coordinates } from '../interfaces';
+import { polysIntersect } from '../utils';
 import { Entity } from './Entity';
+import { RoadEntity } from './RoadEntity';
+
+type CarPolygon = [Coordinates, Coordinates, Coordinates, Coordinates];
 
 export class CarEntity extends Entity {
   private speed: number = 0;
@@ -7,6 +12,47 @@ export class CarEntity extends Entity {
   private maxSpeed: number = 10;
   private friction: number = 0.05;
   private turnRate: number = 0.03;
+  public polygon: CarPolygon;
+  public damaged: boolean = false;
+
+  constructor(private roadEntity: RoadEntity, ...params: ConstructorParameters<typeof Entity>) {
+    super(...params);
+    this.polygon = this.#getPolygon();
+  }
+
+  #getPolygon =  () => {
+    const rad = Math.hypot(this.width, this.height) / 2;
+    const alpha = Math.atan2(this.width, this.height);
+
+    return [
+      {
+        x: this.x - Math.sin(this.angle - alpha) * rad,
+        y: this.y - Math.cos(this.angle - alpha) * rad
+      },
+      {
+        x: this.x - Math.sin(this.angle + alpha) * rad,
+        y: this.y - Math.cos(this.angle + alpha) * rad
+      },
+      {
+        x: this.x - Math.sin(Math.PI + this.angle - alpha) * rad,
+        y: this.y - Math.cos(Math.PI + this.angle - alpha) * rad
+      },
+      {
+        x: this.x - Math.sin(Math.PI + this.angle + alpha) * rad,
+        y: this.y - Math.cos(Math.PI + this.angle + alpha) * rad
+      }
+    ] as CarPolygon;
+  }
+
+  #assessDamage = () => {
+    if (this.damaged) return true;
+    for (let i = 0; i < this.roadEntity.borders.length; i++) {
+      if (polysIntersect(this.polygon, this.roadEntity.borders[i])) {
+        return true
+      }
+    }
+    return false;
+  }
 
   #move = (controls: CarControls) => {
     // Go forward
@@ -59,6 +105,8 @@ export class CarEntity extends Entity {
   }
 
   update = (controls: CarControls) => {
-    this.#move(controls)
+    if (!this.damaged) this.#move(controls)
+    this.polygon = this.#getPolygon();
+    this.damaged = this.#assessDamage();
   };
 }
