@@ -23,17 +23,13 @@ export class NeuralNetwork {
   }
 
   static mutate(network: NeuralNetwork, amount: number = 1) {
-    // const orig = {...network}
     for (let l = 0; l < network.levels.length; l++) {
-      // const level = network.levels[l];
       for (let i = 0; i < network.levels[l].biases.length; i++) {
-        const origBias = network.levels[l].biases[i];
         const newBias = lerp(
           network.levels[l].biases[i],
           Math.random() * 2 - 1,
           amount
         );
-        // if (origBias !== newBias) console.log('origBias vs newBias', origBias, newBias);
         network.levels[l].biases[i] = newBias;
       }
       for (let i = 0; i < network.levels[l].weights.length; i++) {
@@ -47,10 +43,6 @@ export class NeuralNetwork {
         }
       }
     }
-    // network.levels.forEach(level => {
 
-    // });
-
-    // console.log(orig, network);
   }
 }
