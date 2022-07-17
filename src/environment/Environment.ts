@@ -33,7 +33,7 @@ export class Environment {
         30,
         50
       ],
-      carRenderer: [this.ctx],
+      carRenderer: [this.ctx, '#169DDE'],
       carControls: [],
       sensorEntity: [this.roadEntity],
       sensorRenderer: [this.ctx]
@@ -73,11 +73,12 @@ export class Environment {
 
     this.roadRenderer.render();
 
-    this.carManager.render();
-
     this.traffic.forEach(t => {
       t.render();
     });
+
+    this.carManager.render();
+
 
     this.ctx.restore();
 

@@ -4,6 +4,7 @@ import { RoadEntity } from './RoadEntity';
 import { CarControls } from '../controls';
 import { getIntersection, lerp } from '../utils';
 import { Ray, Touch } from '../interfaces';
+import { TrafficManager } from '../managers';
 
 export class SensorEntity extends Entity {
   public readings: (Touch | null | undefined)[] = [];
@@ -40,7 +41,7 @@ export class SensorEntity extends Entity {
     }
   }
 
-  #getReading = (ray: Ray) => {
+  #getReading = (ray: Ray, traffic?: TrafficManager[]) => {
     const { roadEntity } = this;
     let touches: Touch[] = [];
     for (let i = 0; i < roadEntity.borders.length; i++) {
@@ -56,6 +57,24 @@ export class SensorEntity extends Entity {
       }
     }
 
+    if (traffic) {
+      for (let i = 0; i < traffic.length; i++) {
+        const polygon = traffic[i].polygon;
+        for (let j = 0; j < polygon.length; j++) {
+          const touch = getIntersection(
+            ray[0],
+            ray[1],
+            polygon[j],
+            polygon[(j + 1) % polygon.length]
+          );
+
+          if (touch) {
+            touches.push(touch);
+          }
+        }
+      }
+    }
+
     if (touches.length == 0) {
       return null
     } else {
@@ -65,13 +84,13 @@ export class SensorEntity extends Entity {
     }
   }
 
-  update = (controls: CarControls) => {
+  update = (controls: CarControls, traffic?: TrafficManager[]) => {
     this.#castRays();
     this.readings = [];
     for (let i = 0; i < this.rays.length; i++) {
       this.readings.push(
-        this.#getReading(this.rays[i])
-      )
+        this.#getReading(this.rays[i], traffic)
+      );
     }
   };
 

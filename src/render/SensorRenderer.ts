@@ -15,7 +15,7 @@ export class SensorRenderer {
       }
       ctx.beginPath();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'yellow';
+      ctx.strokeStyle = '#D1CA15';
       ctx.moveTo(rays[i][0].x, rays[i][0].y);
       ctx.lineTo(end.x, end.y);
       ctx.stroke();

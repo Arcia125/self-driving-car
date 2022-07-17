@@ -18,7 +18,7 @@ export class TrafficManager {
         30,
         50
       ],
-      carRenderer: [this.ctx],
+      carRenderer: [this.ctx, '#20D1AC'],
       carControls: [true],
     });
 

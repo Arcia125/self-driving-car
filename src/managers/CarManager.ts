@@ -22,7 +22,7 @@ export class CarManager {
 
   constructor(private parameters: {
     carEntity: ConstructorParameters<typeof CarEntity>;
-    carRenderer: [ConstructorParameters<typeof CarRenderer>[0]];
+    carRenderer: [ConstructorParameters<typeof CarRenderer>[1], ConstructorParameters<typeof CarRenderer>[2]];
     carControls: ConstructorParameters<typeof CarControls>;
     sensorEntity?: NecessarySensorEntityConstructorParams | [
       SensorEntityConstructorParams[1]
@@ -34,8 +34,8 @@ export class CarManager {
     );
 
     this.carRenderer = new CarRenderer(
+      this.carEntity,
       ...parameters.carRenderer,
-      this.carEntity
     );
 
     this.controls = new CarControls(...parameters.carControls);
@@ -50,7 +50,7 @@ export class CarManager {
 
   public update = (traffic?: TrafficManager[]) => {
     this.carEntity.update(this.controls, traffic);
-    this.sensorEntity?.update(this.controls);
+    this.sensorEntity?.update(this.controls, traffic);
   }
 
   public render = () => {
