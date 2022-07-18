@@ -7,23 +7,21 @@ import { RoadEntity } from './RoadEntity';
 
 type CarPolygon = [Coordinates, Coordinates, Coordinates, Coordinates];
 
+export type CarEntitySettings = {
+  acceleration: number,
+  maxSpeed: number,
+  friction: number,
+  turnRate: number
+}
+
 export class CarEntity extends Entity {
-  private speed: number = 0;
-  // private acceleration: number = 0.35;
-  // private maxSpeed: number = 10;
-  // private friction: number = 0.05;
-  // private turnRate: number = 0.03;
+  public speed: number = 0;
   public polygon: CarPolygon;
   public damaged: boolean = false;
 
   constructor(
     private roadEntity: RoadEntity,
-    private options: {
-      acceleration: number,
-      maxSpeed: number,
-      friction: number,
-      turnRate: number
-    },
+    public settings: CarEntitySettings,
     ...params: ConstructorParameters<typeof Entity>
   ) {
     super(...params);
@@ -76,33 +74,33 @@ export class CarEntity extends Entity {
   #move = (controls: CarControls) => {
     // Go forward
     if (controls.forward) {
-      this.speed += this.options.acceleration;
+      this.speed += this.settings.acceleration;
     }
 
     // Go Backwards
     if (controls.reverse) {
-      this.speed -= this.options.acceleration;
+      this.speed -= this.settings.acceleration;
     }
 
     // Speed limit
-    if (this.speed > this.options.maxSpeed) {
-      this.speed = this.options.maxSpeed;
+    if (this.speed > this.settings.maxSpeed) {
+      this.speed = this.settings.maxSpeed;
     }
 
     // Reverse speed limit
-    if (this.speed < -this.options.maxSpeed / 2) {
-      this.speed = -this.options.maxSpeed / 2;
+    if (this.speed < -this.settings.maxSpeed / 2) {
+      this.speed = -this.settings.maxSpeed / 2;
     }
 
 
     // Slowdown from friction
     if (this.speed > 0) {
-      this.speed -= this.options.friction;
+      this.speed -= this.settings.friction;
     }
 
     // Slowdown from friction in reverse
     if (this.speed < 0) {
-      this.speed += this.options.friction;
+      this.speed += this.settings.friction;
     }
 
 
@@ -112,10 +110,10 @@ export class CarEntity extends Entity {
       const flip = this.speed > 0 ? 1 : -1;
 
       if (controls.left) {
-        this.angle += this.options.turnRate * flip;
+        this.angle += this.settings.turnRate * flip;
       }
       if (controls.right) {
-        this.angle -= this.options.turnRate * flip;
+        this.angle -= this.settings.turnRate * flip;
       }
     }
 

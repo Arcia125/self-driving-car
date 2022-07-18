@@ -2,6 +2,12 @@ import { RoadRenderer, Visualizer } from '../render';
 import { RoadEntity } from '../entities';
 import { CarManager, TrafficManager } from '../managers';
 import { NeuralNetwork } from '../neuralnet';
+import { getRandomNumber } from '../utils';
+
+type DriverRecord = {
+  record: number;
+  neuralNetwork: NeuralNetwork;
+}
 
 export class Environment {
   private networkCanvas: HTMLCanvasElement = document.getElementById('network-canvas') as HTMLCanvasElement;
@@ -20,25 +26,58 @@ export class Environment {
 
   private handleResize: any;
 
-  private sensorCount = 5;
+
+  private laneCount = 4;
+  private sensorCount = 20;
+  private trafficCount = 70;
+  private carManagerCount = 100;
+  // private carManagerCount = 1;
+  private rayLength = 250;
+  private raySpread = Math.PI;
+  private bestDriverRecord: DriverRecord | null;
+  private isHumanControlled = false;
 
   constructor() {
+    this.bestDriverRecord = this.getBestDriverFromStorage();
+    if (!this.bestDriverRecord) {
+      this.carManagerCount *= 2;
+    }
     this.carCanvasContext = this.carCanvas.getContext('2d') as CanvasRenderingContext2D;
-    this.roadEntity = new RoadEntity(4, this.carCanvas.width/2, 0, this.carCanvas.width * 0.9, this.carCanvas.height);
+    this.roadEntity = new RoadEntity(this.laneCount, this.carCanvas.width / 2, 0, this.carCanvas.width * 0.9, this.carCanvas.height);
     this.roadRenderer = new RoadRenderer(this.carCanvasContext, this.roadEntity);
 
     this.networkCanvasContext = this.networkCanvas.getContext('2d') as CanvasRenderingContext2D;
 
     this.resizeCanvas();
 
-    this.carManagers = this.generateCarManagers(200);
+    this.carManagers = this.generateCarManagers(this.carManagerCount);
+
 
     this.traffic = [];
 
-    const trafficCount = 100;
+    const maxSpeed = this.carManagers[0].carEntity.settings.maxSpeed ;
+    const firstCarY = (Math.random() * -200) -200;
+    const iterationOffset = 200;
+    for (let i = 0; i < this.trafficCount; i++) {
+      this.traffic.push(
 
-    for (let i = 0; i < trafficCount; i++) {
-      this.traffic.push(new TrafficManager(this.carCanvasContext, this.roadEntity));
+        new TrafficManager(
+          this.carCanvasContext,
+          this.roadEntity,
+          {
+            acceleration: 0.35,
+            maxSpeed: i === 0 ? 2 : getRandomNumber(maxSpeed / 2, maxSpeed - 2),
+            friction: 0.05,
+            turnRate: 0.03,
+          },
+          // this.roadEntity.getLaneCenter(Math.floor(Math.random() * this.roadEntity.laneCount)),
+          i === 0 ? this.roadEntity.getLaneCenter(Math.floor(this.roadEntity.laneCount / 2)) : this.roadEntity.getLaneCenter(Math.floor(Math.random() * this.roadEntity.laneCount)),
+          // Math.random() * -20000,
+
+          i === 0 ? firstCarY : getRandomNumber(firstCarY - ((i - 1) * iterationOffset), firstCarY - (i * iterationOffset)),
+          30,
+          50
+        ));
     }
   }
 
@@ -49,9 +88,9 @@ export class Environment {
         carEntity: [
           this.roadEntity,
           {
-            acceleration: 0.45,
-            maxSpeed: 25,
-            friction: 0.05,
+            acceleration: 1,
+            maxSpeed: 15,
+            friction: 0.2,
             turnRate: 0.05
           },
           this.roadEntity.getLaneCenter(Math.floor(this.roadEntity.laneCount / 2)),
@@ -61,9 +100,11 @@ export class Environment {
         ],
         carRenderer: [this.carCanvasContext, '#169DDE'],
         carControls: [],
-        sensorEntity: [this.roadEntity, this.sensorCount],
+        sensorEntity: [this.roadEntity, this.sensorCount, this.rayLength, this.raySpread, []],
         sensorRenderer: [this.carCanvasContext],
         neuralNetwork: [
+          // [this.sensorCount + 1, this.sensorCount / 2, 6, 4]
+          // [this.sensorCount + 1, 9, 6, 4]
           [this.sensorCount, 6, 4]
         ]
       }))
@@ -72,13 +113,40 @@ export class Environment {
   }
 
   start = () => {
-    const bestCarManagerBrain = this.getBestCarManagerBrainFromStorage();
-    if (bestCarManagerBrain) {
+    const saveButton = document.getElementById('save');
+    const discardButton = document.getElementById('discard');
+    const takeControlButton = document.getElementById('takeControl')
+
+    saveButton?.addEventListener('click', () => {
+      this.saveBestDriverToStorage();
+    });
+    discardButton?.addEventListener('click', () => {
+      this.discardBestCarManagerFromStorage();
+    });
+    takeControlButton?.addEventListener('click', () => {
+      if (this.isHumanControlled) {
+        CarManager.closeControlListeners();
+        this.isHumanControlled = false;
+        console.log('dropping control')
+      } else {
+        this.takeControlOfBestCarManager();
+        this.isHumanControlled = true;
+        console.log('taking control')
+      }
+    });
+
+    this.handleResize = () => {
+      this.resizeCanvas();
+    };
+    document.addEventListener('resize', this.handleResize);
+
+    this.bestDriverRecord = this.getBestDriverFromStorage();
+    if (this.bestDriverRecord) {
       for (let i = 0; i < this.carManagers.length; i++) {
-        const parsedBrain = JSON.parse(bestCarManagerBrain);
-        this.carManagers[i].neuralNetwork = parsedBrain;
+        this.bestDriverRecord = this.getBestDriverFromStorage() as DriverRecord;
+        this.carManagers[i].neuralNetwork = this.bestDriverRecord.neuralNetwork;
         if (i != 0) {
-          const mutationRate = .12;
+          const mutationRate = .13;
           NeuralNetwork.mutate(this.carManagers[i].neuralNetwork as NeuralNetwork, mutationRate);
         }
       }
@@ -87,45 +155,48 @@ export class Environment {
       this.update();
     }, 1000 / 40);
     this.animate(0);
-
-
-    this.handleResize = () => {
-      this.resizeCanvas();
-    };
-    document.addEventListener('resize', this.handleResize);
-
-    const saveButton = document.getElementById('save');
-    const discardButton = document.getElementById('discard');
-    saveButton?.addEventListener('click', () => {
-      this.saveBestCarManager();
-    });
-
-    discardButton?.addEventListener('click', () => {
-      this.discardBestCarManager();
-    });
+    if (this.isHumanControlled) this.carManagers[0].makeControlled();
   };
 
   stop = () => {
     if (this.updateInterval) clearInterval(this.updateInterval);
     document.removeEventListener('resize', this.handleResize);
+    if (this.isHumanControlled) this.carManagers[0].closeControls();
   };
 
-  getBestCarManager =  () => {
-    const furthestY = Math.min(...this.carManagers.map(carManager => carManager.carEntity.y));
+  getBestCarManager = (filterAlive: boolean = false) => {
+    let carManagers = this.carManagers.filter(carManager => filterAlive ? !carManager.carEntity.damaged : true)
+    if (!carManagers.length) carManagers = this.carManagers;
+    const furthestY = Math.min(...carManagers.map(carManager => carManager.carEntity.y));
+
     return this.carManagers.find(carManager => carManager.carEntity.y === furthestY);
   }
 
-  saveBestCarManager = () => {
+  getBestDriver = (): DriverRecord | null => {
     const bestCarManager = this.getBestCarManager();
-    localStorage.setItem('bestCarManagerBrain', JSON.stringify(bestCarManager?.neuralNetwork));
+    if (!bestCarManager) return null;
+    return {
+      record: Math.max(Math.abs(bestCarManager?.carEntity.y || 0), this.bestDriverRecord?.record || 0),
+      neuralNetwork: bestCarManager.neuralNetwork as NeuralNetwork
+    };
+  };
+
+  saveBestDriverToStorage = () => {
+    const bestDriver = this.getBestDriver();
+    localStorage.setItem('bestDriver', JSON.stringify(bestDriver));
   }
 
-  getBestCarManagerBrainFromStorage = () => {
-    return localStorage.getItem('bestCarManagerBrain');
+  getBestDriverFromStorage = (): DriverRecord | null => {
+    const bestDriver = localStorage.getItem('bestDriver');
+    return bestDriver ? JSON.parse(bestDriver) : null;
   }
 
-  discardBestCarManager = () => {
-    localStorage.removeItem('bestCarManagerBrain');
+  discardBestCarManagerFromStorage = () => {
+    localStorage.removeItem('bestDriver');
+  }
+
+  takeControlOfBestCarManager = () => {
+    this.getBestCarManager(true)?.makeControlled();
   }
 
   update = () => {
@@ -147,17 +218,18 @@ export class Environment {
   resizeCanvas = () => {
     this.carCanvas.height = window.innerHeight;
     this.networkCanvas.height = window.innerHeight;
-    this.networkCanvas.width = 300;
+    const carCanvasRect = this.carCanvas.getBoundingClientRect()
+    this.networkCanvas.width = window.innerWidth - carCanvasRect.left - carCanvasRect.width;
   }
 
   animate = (time: number) => {
-    if (time > 20000 && this.carManagers.length > 100) {
-      this.carManagers = this.carManagers.sort((a, b) => a.carEntity.y - b.carEntity.y).slice(0, this.carManagers.length - (time / 5000));
-    }
     this.carCanvasContext.clearRect(0, 0, this.carCanvas.width, this.carCanvas.height);
     this.carCanvasContext.save();
     const bestCarManager = this.getBestCarManager();
-    this.carCanvasContext.translate(0, -(bestCarManager?.carEntity?.y || 1) + this.carCanvas.height * 0.7);
+    const bestLivingCarManager = bestCarManager || this.getBestCarManager(true);
+    const yPos = CarManager.userControl ? CarManager.userControl.carEntity.y : bestLivingCarManager?.carEntity?.y || 1;
+    const position = -(yPos) + this.carCanvas.height * 0.7;
+    this.carCanvasContext.translate(0, position);
 
     this.roadRenderer.render();
 
@@ -165,11 +237,22 @@ export class Environment {
       t.render();
     });
 
+    const livingManagers = this.carManagers.filter(carManager => !carManager.carEntity.damaged).length;
 
-    [...this.carManagers].sort((a, b) => a.carEntity.y - b.carEntity.y)?.slice(0, 60).forEach((carManager, i) => {
+    const carManagerRating = (carManager: CarManager) => {
+      const damageWeighting = (carManager.carEntity.damaged ? 0.8 : 1.05);
+      return carManager.carEntity.y * damageWeighting;
+    }
+
+    const renderedManagers = [...this.carManagers].sort((a, b) => carManagerRating(a) - carManagerRating(b))?.slice(0, 60);
+
+    if (CarManager.userControl && renderedManagers.indexOf(CarManager.userControl) !== 0) CarManager.userControl.render({ sensors: true });
+
+    renderedManagers.forEach((carManager, i) => {
       this.carCanvasContext.globalAlpha = Math.max(1 - (i / 25), 0);
-      carManager.render();
+      carManager.render({ sensors: i === 0 && !CarManager.userControl || carManager === CarManager.userControl });
     });
+
 
 
     this.carCanvasContext.restore();
@@ -177,15 +260,36 @@ export class Environment {
     this.networkCanvasContext.clearRect(0, 0, this.networkCanvas.width, this.networkCanvas.height);
     this.networkCanvasContext.lineDashOffset = - time / 66
 
-    Visualizer.drawNetwork(this.networkCanvasContext, bestCarManager?.neuralNetwork);
+    Visualizer.drawNetwork(this.networkCanvasContext, bestLivingCarManager?.neuralNetwork);
 
-    const livingManagers = this.carManagers.filter(carManager => !carManager.carEntity.damaged).length;
 
-    console.log(livingManagers);
-
-    this.carCanvasContext.font = '48px serif';
+    this.carCanvasContext.font = '28px serif';
     this.carCanvasContext.fillStyle = '#EFF';
-    this.carCanvasContext.fillText(`Living: ${livingManagers}`, 25, 40);
+    this.carCanvasContext.textAlign = 'left';
+    this.carCanvasContext.fillText(`${livingManagers} 🏎`, 25, 40);
+
+    this.carCanvasContext.font = '24px serif';
+    this.carCanvasContext.fillStyle = '#EFF';
+    this.carCanvasContext.fillText(`${Math.abs(Math.floor(bestCarManager?.carEntity.y || 0 - 100))}m`, 25, this.carCanvas.height - 30)
+
+    if (this.bestDriverRecord) {
+      this.carCanvasContext.font = '18px serif';
+      this.carCanvasContext.fillStyle = '#EFF';
+      this.carCanvasContext.fillText(`Record: ${Math.floor(this.bestDriverRecord.record)}m`, 25, this.carCanvas.height - 60);
+    }
+
+    const baseSpeed = CarManager.userControl?.carEntity.speed || bestLivingCarManager?.carEntity.speed || 0;
+    this.carCanvasContext.font = '18px monospaced';
+    this.carCanvasContext.fillStyle = '#EFF';
+    this.carCanvasContext.fillText(' km/h', this.carCanvas.width - 50, this.carCanvas.height - 40);
+    const speedIndex = Math.floor(((baseSpeed / (bestLivingCarManager?.carEntity?.settings?.maxSpeed || 1)) * 100) / 30);
+    const speedColor = ['#B3CCF5', '#F7F1AF', '#F5CA7B', '#FF7F7F'][speedIndex];
+    const speedFontSize = ['20px', '22px', '24px', '26px'][speedIndex];
+    this.carCanvasContext.font = `${speedFontSize} monospaced`;
+    this.carCanvasContext.fillStyle = speedColor;
+    this.carCanvasContext.textAlign = 'right';
+    this.carCanvasContext.textBaseline = 'middle';
+    this.carCanvasContext.fillText(`${Math.round((baseSpeed) * 10)}`, this.carCanvas.width - 50, this.carCanvas.height - 40);
 
     requestAnimationFrame(this.animate);
   };

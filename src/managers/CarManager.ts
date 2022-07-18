@@ -15,12 +15,14 @@ type NecessarySensorEntityConstructorParams = [
 ];
 
 export class CarManager {
+  public static userControl: CarManager | null = null;
   public carEntity: CarEntity;
   public carRenderer: CarRenderer;
   public controls: CarControls;
   public sensorEntity?: SensorEntity;
   public sensorRenderer?: SensorRenderer;
   public neuralNetwork?: NeuralNetwork;
+  public lastOffsets: number[][] = [];
 
   constructor(private parameters: {
     carEntity: ConstructorParameters<typeof CarEntity>;
@@ -57,9 +59,17 @@ export class CarManager {
   }
 
   public update = (traffic?: TrafficManager[]) => {
-    if (this.sensorEntity && this.neuralNetwork) {
+    if (this.sensorEntity && this.neuralNetwork && this !== CarManager.userControl) {
       const offsets = this.sensorEntity.readings.map(r => r == null ? 0 : 1 - r.offset);
+      // const outputs = NeuralNetwork.feedForward(offsets.concat(this.lastOffsets.reduce((acc, curr) => acc.length === 0 ? curr : acc.map((value, i) => (value + (curr[i])) / 2), [])), this.neuralNetwork);
+      // const outputs = NeuralNetwork.feedForward(offsets.concat(this.lastOffsets.reduce((acc, curr) => acc + curr.reduce((a, c) => a + c, 0), 0)), this.neuralNetwork);
       const outputs = NeuralNetwork.feedForward(offsets, this.neuralNetwork);
+      // const outputs = NeuralNetwork.feedForward(offsets.concat(this.lastOffsets.flat().reduce((acc, cur) => acc + cur, 0) / this.lastOffsets.flat().length), this.neuralNetwork);
+      // if (this.lastOffsets.flat().length > (((this.neuralNetwork.neuronCounts[0] - 1) - offsets.length) * 50)) {
+      //   this.lastOffsets.pop();
+      // }
+      // this.lastOffsets.push(offsets);
+      // this.lastOffsets.unshift(offsets);
       this.controls.forward = outputs[0]
       this.controls.left = outputs[1];
       this.controls.right = outputs[2];
@@ -69,12 +79,35 @@ export class CarManager {
     this.sensorEntity?.update(this.controls, traffic);
   }
 
-  public render = () => {
+  public render = (options?: { sensors: boolean }) => {
     this.carRenderer.render();
-    this.sensorRenderer?.render();
+    if (options?.sensors) {
+      this.sensorRenderer?.render();
+    }
   }
 
   public get polygon() {
     return this.carEntity.polygon;
+  }
+
+  public makeControlled = () => {
+    CarManager.makeManagerControlled(this);
+  }
+
+  public closeControls = () => {
+    CarManager.closeControlListeners();
+  }
+
+  public static closeControlListeners(): void {
+    if (CarManager.userControl) {
+      CarManager.userControl.controls.close();
+      CarManager.userControl = null;
+    }
+  }
+
+  public static makeManagerControlled(manager: CarManager): void {
+    CarManager.closeControlListeners();
+    CarManager.userControl = manager;
+    CarManager.userControl.controls.listen();
   }
 }

@@ -66,6 +66,10 @@ export class CarControls {
       console.warn("Can't start listening, because Controls are already listening");
       return;
     }
+    this.forward = false;
+    this.left = false;
+    this.right = false;
+    this.reverse = false;
     this.#addKeyboardListeners();
   };
 
