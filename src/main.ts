@@ -1,6 +1,10 @@
 import './styles/styles.css';
-import { Environment } from './environment';
+import { Environment, type EnvironmentSettings } from './environment';
 
-const env = new Environment();
+const initialSettings: Partial<EnvironmentSettings> = {
+
+};
+
+const env = new Environment(initialSettings);
 
 env.start();

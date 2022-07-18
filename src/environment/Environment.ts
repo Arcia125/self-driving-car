@@ -9,6 +9,16 @@ type DriverRecord = {
   neuralNetwork: NeuralNetwork;
 }
 
+export type EnvironmentSettings = {
+  laneCount: number;
+  isHumanControlled: boolean;
+  sensorCount: number;
+  trafficCount: number;
+  carManagerCount: number;
+  rayLength: number;
+  raySpread: number;
+}
+
 export class Environment {
   private networkCanvas: HTMLCanvasElement = document.getElementById('network-canvas') as HTMLCanvasElement;
   private networkCanvasContext: CanvasRenderingContext2D;
@@ -26,31 +36,40 @@ export class Environment {
 
   private handleResize: any;
 
-
-  private laneCount = 4;
-  private sensorCount = 20;
-  private trafficCount = 70;
-  private carManagerCount = 100;
-  // private carManagerCount = 1;
-  private rayLength = 250;
-  private raySpread = Math.PI;
   private bestDriverRecord: DriverRecord | null;
-  private isHumanControlled = false;
 
-  constructor() {
+  public static get configDefaults(): EnvironmentSettings {
+    return {
+      laneCount: 4,
+      isHumanControlled: false,
+      sensorCount: 20,
+      trafficCount: 70,
+      carManagerCount: 300,
+      rayLength: 250,
+      raySpread: Math.PI
+    };
+  }
+
+  public settings: EnvironmentSettings;
+
+  constructor(private initialSettings?: Partial<EnvironmentSettings>) {
+    this.settings = {
+      ...Environment.configDefaults,
+      ...initialSettings
+    }
     this.bestDriverRecord = this.getBestDriverFromStorage();
     if (!this.bestDriverRecord) {
-      this.carManagerCount *= 2;
+      this.settings.carManagerCount *= 2;
     }
     this.carCanvasContext = this.carCanvas.getContext('2d') as CanvasRenderingContext2D;
-    this.roadEntity = new RoadEntity(this.laneCount, this.carCanvas.width / 2, 0, this.carCanvas.width * 0.9, this.carCanvas.height);
+    this.roadEntity = new RoadEntity(this.settings.laneCount, this.carCanvas.width / 2, 0, this.carCanvas.width * 0.9, this.carCanvas.height);
     this.roadRenderer = new RoadRenderer(this.carCanvasContext, this.roadEntity);
 
     this.networkCanvasContext = this.networkCanvas.getContext('2d') as CanvasRenderingContext2D;
 
     this.resizeCanvas();
 
-    this.carManagers = this.generateCarManagers(this.carManagerCount);
+    this.carManagers = this.generateCarManagers(this.settings.carManagerCount);
 
 
     this.traffic = [];
@@ -58,7 +77,7 @@ export class Environment {
     const maxSpeed = this.carManagers[0].carEntity.settings.maxSpeed ;
     const firstCarY = (Math.random() * -200) -200;
     const iterationOffset = 200;
-    for (let i = 0; i < this.trafficCount; i++) {
+    for (let i = 0; i < this.settings.trafficCount; i++) {
       this.traffic.push(
 
         new TrafficManager(
@@ -100,12 +119,12 @@ export class Environment {
         ],
         carRenderer: [this.carCanvasContext, '#169DDE'],
         carControls: [],
-        sensorEntity: [this.roadEntity, this.sensorCount, this.rayLength, this.raySpread, []],
+        sensorEntity: [this.roadEntity, this.settings.sensorCount, this.settings.rayLength, this.settings.raySpread, []],
         sensorRenderer: [this.carCanvasContext],
         neuralNetwork: [
-          // [this.sensorCount + 1, this.sensorCount / 2, 6, 4]
-          // [this.sensorCount + 1, 9, 6, 4]
-          [this.sensorCount, 6, 4]
+          // [this.config.sensorCount + 1, this.config.sensorCount / 2, 6, 4]
+          // [this.config.sensorCount + 1, 9, 6, 4]
+          [this.settings.sensorCount, 6, 4]
         ]
       }))
     }
@@ -124,13 +143,13 @@ export class Environment {
       this.discardBestCarManagerFromStorage();
     });
     takeControlButton?.addEventListener('click', () => {
-      if (this.isHumanControlled) {
+      if (this.settings.isHumanControlled) {
         CarManager.closeControlListeners();
-        this.isHumanControlled = false;
+        this.settings.isHumanControlled = false;
         console.log('dropping control')
       } else {
         this.takeControlOfBestCarManager();
-        this.isHumanControlled = true;
+        this.settings.isHumanControlled = true;
         console.log('taking control')
       }
     });
@@ -155,13 +174,13 @@ export class Environment {
       this.update();
     }, 1000 / 40);
     this.animate(0);
-    if (this.isHumanControlled) this.carManagers[0].makeControlled();
+    if (this.settings.isHumanControlled) this.carManagers[0].makeControlled();
   };
 
   stop = () => {
     if (this.updateInterval) clearInterval(this.updateInterval);
     document.removeEventListener('resize', this.handleResize);
-    if (this.isHumanControlled) this.carManagers[0].closeControls();
+    if (this.settings.isHumanControlled) this.carManagers[0].closeControls();
   };
 
   getBestCarManager = (filterAlive: boolean = false) => {
