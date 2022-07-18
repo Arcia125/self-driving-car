@@ -2,7 +2,10 @@ body {
   margin: 0;
   background: #616075;
   overflow: hidden;
-  text-align: center;
+}
+
+#app {
+  display: flex;
 }
 
 #car-canvas {
@@ -12,3 +15,41 @@ body {
 #network-canvas {
   background: #071715;
 }
+
+.stage {
+  display: flex;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.controls button {
+  border: none;
+  background: none;
+  outline: none;
+  height: 50px;
+  width: 50px;
+  border-radius: 6px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+
+  background: hsl(238, 20%, 18%);
+
+  font-size: 24px;
+
+}
+
+.controls button:hover {
+  background: hsl(238, 20%, 24%);
+}
+
+button#takeControl > span {
+  position: relative;
+  top: -5px;
+}
+
+

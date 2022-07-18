@@ -7,15 +7,18 @@
     <title>Vite + TS</title>
   </head>
   <body>
-    <div id="app"></div>
-    <div class="controls">
-      <button id="save">💾</button>
-      <button id="discard">🗑️</button>
-      <button onclick="location.reload()">🔄</button>
-      <button id="takeControl">🎮</button>
+    <div id="app">
+      <div class="controls">
+        <button id="save">💾</button>
+        <button id="discard">🗑️</button>
+        <button onclick="location.reload()">🔄</button>
+        <button id="takeControl"><span>🎮</span></button>
+      </div>
+      <div class="stage">
+        <canvas id="car-canvas">Enable Javascript to see the simulation</canvas>
+        <canvas id="network-canvas">Enable Javascript to see the neural network</canvas>
+      </div>
     </div>
-    <canvas id="car-canvas">Enable Javascript to see the simulation</canvas>
-    <canvas id="network-canvas">Enable Javascript to see the neural network</canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
