@@ -157,7 +157,7 @@ export class Environment {
     this.handleResize = () => {
       this.resizeCanvas();
     };
-    document.addEventListener('resize', this.handleResize);
+    window.addEventListener('resize', this.handleResize);
 
     this.bestDriverRecord = this.getBestDriverFromStorage();
     if (this.bestDriverRecord) {
@@ -179,7 +179,7 @@ export class Environment {
 
   stop = () => {
     if (this.updateInterval) clearInterval(this.updateInterval);
-    document.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('resize', this.handleResize);
     if (this.settings.isHumanControlled) this.carManagers[0].closeControls();
   };
 
@@ -239,6 +239,7 @@ export class Environment {
     this.networkCanvas.height = window.innerHeight;
     const carCanvasRect = this.carCanvas.getBoundingClientRect()
     this.networkCanvas.width = window.innerWidth - carCanvasRect.left - carCanvasRect.width;
+    console.log(window.innerHeight, carCanvasRect, this.networkCanvas.getBoundingClientRect());
   }
 
   animate = (time: number) => {
