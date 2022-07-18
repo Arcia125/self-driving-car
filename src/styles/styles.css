@@ -37,14 +37,14 @@ body {
   margin-top: 5px;
   margin-bottom: 5px;
 
-  background: hsl(238, 20%, 18%);
+  background: #252537;
 
   font-size: 24px;
 
 }
 
 .controls button:hover {
-  background: hsl(238, 20%, 24%);
+  background: #313249;
 }
 
 button#takeControl > span {
